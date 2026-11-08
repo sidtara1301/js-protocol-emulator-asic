@@ -8,7 +8,7 @@ async def test_basic_boot(dut):
     dut._log.info("Starting basic boot test...")
     
     # Start a 50 MHz clock
-    clock = Clock(dut.clk, 20, units="ns")
+    clock = Clock(dut.clk, 20, unit="ns")
     cocotb.start_soon(clock.start())
 
     # Initialize Tiny Tapeout wrapper inputs safely
