@@ -1,56 +1,55 @@
 # Tiny Tapeout project information
 project:
-  title:        ""      # Project title
-  author:       ""      # Your name
+  title:        "Deterministic PIO Protocol Emulator ASIC"      # Project title
+  author:       "sidtara"      # Your name
   discord:      ""      # Your discord username, for communication and automatically assigning you a Tapeout role (optional)
-  description:  ""      # One line description of what your project does
-  language:     "Verilog" # other examples include SystemVerilog, Amaranth, VHDL, etc
-  clock_hz:     0       # Clock frequency in Hz (or 0 if not applicable)
+  description:  "Programmable 16-bit Side-Set Protocol Emulator with 2048-inst SRAM for UART, SPI, and I2C"      # One line description of what your project does
+  language:     "SystemVerilog" # other examples include SystemVerilog, Amaranth, VHDL, etc
+  clock_hz:     50000000       # Clock frequency in Hz (or 0 if not applicable)
 
   # How many tiles your design occupies? A single tile is about 202x155 uM.
-  tiles: "1x1"          # Valid values: 1x1, 1x2, 2x2, 3x2, 4x2, 6x2, 8x2, 3x4, 4x4, 5x4, 6x4 or 8x4
+  tiles: "8x4"          # Valid values: 1x1, 1x2, 2x2, 3x2, 4x2, 6x2, 8x2, 3x4, 4x4, 5x4, 6x4 or 8x4
 
   # Your top module name must start with "tt_um_". Make it unique by including your github username:
-  top_module:  "tt_um_example"
+  top_module:  "tt_um_protocol_emulator"
 
   # List your project's source files here.
   # Source files must be in ./src and you must list each source file separately, one per line.
   # Don't forget to also update `PROJECT_SOURCES` in test/Makefile.
   source_files:
-    - "project.v"
+    - "emulator_core.sv"
 
 # The pinout of your project. Leave unused pins blank. DO NOT delete or add any pins.
 # This section is for the datasheet/website. Use descriptive names (e.g., RX, TX, MOSI, SCL, SEG_A, etc.).
 pinout:
   # Inputs
-  ui[0]: ""
-  ui[1]: ""
-  ui[2]: ""
-  ui[3]: ""
+  ui[0]: "host_load_mode (1=Raw Bootloader, 0=SPI Command Mode)"
+  ui[1]: "host_spi_cs_n (Active-low Host SPI Chip Select)"
+  ui[2]: "host_spi_sck (Host SPI Serial Clock)"
+  ui[3]: "host_spi_mosi (Host SPI MOSI)"
   ui[4]: ""
   ui[5]: ""
   ui[6]: ""
   ui[7]: ""
 
   # Outputs
-  uo[0]: ""
-  uo[1]: ""
-  uo[2]: ""
-  uo[3]: ""
-  uo[4]: ""
-  uo[5]: ""
-  uo[6]: ""
-  uo[7]: ""
+  uo[0]: "side_set_clk_pin (Dedicated Side-Set Clock Output)"
+  uo[1]: "host_spi_miso (Host SPI MISO)"
+  uo[2]: "tx_fifo_full"
+  uo[3]: "rx_fifo_not_empty"
+  uo[4]: "proto_tx_debug[0]"
+  uo[5]: "proto_tx_debug[1]"
+  uo[6]: "proto_tx_debug[2]"
+  uo[7]: "proto_tx_debug[3]"
 
   # Bidirectional pins
-  uio[0]: ""
-  uio[1]: ""
-  uio[2]: ""
-  uio[3]: ""
-  uio[4]: ""
-  uio[5]: ""
-  uio[6]: ""
-  uio[7]: ""
-
+  uio[0]: "GPIO[0] (Protocol Pin 0 - UART TX / SPI MOSI)"
+  uio[1]: "GPIO[1] (Protocol Pin 1 - UART RX / SPI MISO)"
+  uio[2]: "GPIO[2] (Protocol Pin 2 - I2C SDA Open-Drain)"
+  uio[3]: "GPIO[3] (Protocol Pin 3 - I2C SCL / SPI CS_N)"
+  uio[4]: "GPIO[4] (Protocol Pin 4)"
+  uio[5]: "GPIO[5] (Protocol Pin 5)"
+  uio[6]: "GPIO[6] (Protocol Pin 6)"
+  uio[7]: "GPIO[7] (Protocol Pin 7)"
 # Do not change!
 yaml_version: 6
