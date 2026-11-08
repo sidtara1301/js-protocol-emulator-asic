@@ -1275,5 +1275,3 @@ module tt_um_protocol_emulator (
 endmodule : tt_um_protocol_emulator
 
 `default_nettype wire
-
-
