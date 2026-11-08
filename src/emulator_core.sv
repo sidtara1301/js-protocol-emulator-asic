@@ -6,72 +6,9 @@
 //          Branch Conditions, Side-Set fields, and Host SPI Commands for the
 //          Protocol Emulator ASIC.
 // =============================================================================
-package isa_pkg;
-
-    // 3-bit Opcode Definitions (8 core instructions)
-    typedef enum logic [2:0] {
-        OP_SET  = 3'b000, // Drive GPIO[3:0] pins using 4-bit mask and 4-bit value
-        OP_WAIT = 3'b001, // Stall execution until selected GPIO pin matches polarity
-        OP_OUT  = 3'b010, // Shift 1 bit from OSR to pin (supports LSB/MSB-first & Open-Drain)
-        OP_IN   = 3'b011, // Sample 1 bit from selected GPIO pin into ISR (LSB/MSB-first)
-        OP_JMP  = 3'b100, // Conditional or unconditional jump (supports X-- loop counter)
-        OP_PULL = 3'b101, // Pull 8-bit byte from Host TX FIFO (or 7-bit imm) into OSR
-        OP_PUSH = 3'b110, // Push 8-bit byte from ISR into Host RX FIFO
-        OP_MOV  = 3'b111  // Configure Scratch X, Pin Directions, Clock Divider, Page/OD/Halt
-    } opcode_e;
-
-    // 2-bit Jump Condition Encoding (stored in operand[7:6] during OP_JMP)
-    typedef enum logic [1:0] {
-        JMP_ALWAYS   = 2'b00, // Unconditional branch to {pc_page_q, operand[5:0]}
-        JMP_PIN_LOW  = 2'b01, // Branch if gpio_in[jmp_pin_sel_q] == 0
-        JMP_PIN_HIGH = 2'b10, // Branch if gpio_in[jmp_pin_sel_q] == 1
-        JMP_X_NZ_DEC = 2'b11  // Branch if scratch counter X != 0, and post-decrement X
-    } jmp_cond_e;
-
-    // 2-bit MOV Target Encoding (stored in operand[7:6] during OP_MOV)
-    typedef enum logic [1:0] {
-        MOV_DEST_X      = 2'b00, // Load 6-bit immediate into Scratch Loop Counter X
-        MOV_DEST_PINDIR = 2'b01, // Load 6-bit immediate into GPIO Output Enable gpio_oe_q[5:0]
-        MOV_DEST_CLKDIV = 2'b10, // Load 6-bit immediate into Baud Rate Clock Prescaler
-        MOV_DEST_SYS    = 2'b11  // Sub-decoded by operand[5:3]:
-                                 //   0xx: pc_page_q <= operand[4:0] (32 pages x 64 words = 2048 insts)
-                                 //   100: jmp_pin_sel_q <= operand[2:0] (select pin 0..7 for OP_JMP)
-                                 //   101: gpio_oe_q[7:6] <= operand[1:0] (configure upper 2 GPIO OEs)
-                                 //   110: open_drain_mask_q[operand[2:0]] <= 1'b1 (lock pin as open-drain)
-                                 //   111: state_q <= ST_HALTED (clean firmware HALT)
-    } mov_dest_e;
-
-    // Host SPI Command Opcodes (1st byte after CS_N asserts low when load_mode == 0)
-    // Note on Host SPI Timing: Because SCK is synchronized into the ASIC clock domain,
-    // the external host must satisfy f_clk >= 8 * f_SPI.
-    typedef enum logic [7:0] {
-        CMD_NOP        = 8'h00,
-        CMD_WRITE_IMEM = 8'h01, // 16-bit start addr + 16-bit inst words (ONLY allowed when stopped)
-        CMD_WRITE_TX   = 8'h02, // Stream 8-bit payload bytes into Host TX FIFO
-        CMD_READ_RX    = 8'h03, // Stream 8-bit payload bytes out of Host RX FIFO
-        CMD_CTRL       = 8'h04, // 1-byte control: bit[0]=run, bit[1]=reset_cpu, bit[2]=clear_fifo
-        CMD_STATUS     = 8'h05  // Read 8-bit status: {halted, running, imem_err, fifo_ovf, rx_f, rx_e, tx_f, tx_e}
-    } spi_cmd_e;
-
-    // 16-bit Packed Instruction Format (Reference Layout)
-    // +------------+-------+--------+-----------+--------------+
-    // | Bits 15:13 | Bit12 | Bit 11 | Bits 10:8 |  Bits 7:0    |
-    // |   opcode   | ss_en | ss_val |   delay   |   operand    |
-    // +------------+-------+--------+-----------+--------------+
-    // OP_OUT operand[7:0] layout:
-    //   operand[7]   = 1: Open-Drain mode, 0: Push-Pull mode
-    //   operand[6]   = 1: MSB-first (osr_q[7]), 0: LSB-first (osr_q[0])
-    //   operand[5:3] = Reserved (0)
-    //   operand[2:0] = Target GPIO pin index (0..7)
-    typedef struct packed {
-        opcode_e    opcode;   // [15:13] Primary operation
-        logic       ss_en;    // [12]    Side-set Enable (1 = update side_set_pin)
-        logic       ss_val;   // [11]    Side-set Value  (0 or 1 driven onto SCLK)
-        logic [2:0] delay;    // [10:8]  Post-instruction stall (0 to 7 Uniform Protocol Ticks)
-        logic [7:0] operand;  // [7:0]   Immediate data, pin mask, or branch address
-    } instruction_t;
-
-endpackage : isa_pkg
+ifndef YOSYS
+
+endif
 
 
 // =============================================================================
@@ -274,7 +211,72 @@ module bootloader_host_if (
     input  logic        rx_fifo_full,
     input  logic        rx_fifo_ovf
 );
-    import isa_pkg::*;
+    
+
+    // 3-bit Opcode Definitions (8 core instructions)
+    typedef enum logic [2:0] {
+        OP_SET  = 3'b000, // Drive GPIO[3:0] pins using 4-bit mask and 4-bit value
+        OP_WAIT = 3'b001, // Stall execution until selected GPIO pin matches polarity
+        OP_OUT  = 3'b010, // Shift 1 bit from OSR to pin (supports LSB/MSB-first & Open-Drain)
+        OP_IN   = 3'b011, // Sample 1 bit from selected GPIO pin into ISR (LSB/MSB-first)
+        OP_JMP  = 3'b100, // Conditional or unconditional jump (supports X-- loop counter)
+        OP_PULL = 3'b101, // Pull 8-bit byte from Host TX FIFO (or 7-bit imm) into OSR
+        OP_PUSH = 3'b110, // Push 8-bit byte from ISR into Host RX FIFO
+        OP_MOV  = 3'b111  // Configure Scratch X, Pin Directions, Clock Divider, Page/OD/Halt
+    } opcode_e;
+
+    // 2-bit Jump Condition Encoding (stored in operand[7:6] during OP_JMP)
+    typedef enum logic [1:0] {
+        JMP_ALWAYS   = 2'b00, // Unconditional branch to {pc_page_q, operand[5:0]}
+        JMP_PIN_LOW  = 2'b01, // Branch if gpio_in[jmp_pin_sel_q] == 0
+        JMP_PIN_HIGH = 2'b10, // Branch if gpio_in[jmp_pin_sel_q] == 1
+        JMP_X_NZ_DEC = 2'b11  // Branch if scratch counter X != 0, and post-decrement X
+    } jmp_cond_e;
+
+    // 2-bit MOV Target Encoding (stored in operand[7:6] during OP_MOV)
+    typedef enum logic [1:0] {
+        MOV_DEST_X      = 2'b00, // Load 6-bit immediate into Scratch Loop Counter X
+        MOV_DEST_PINDIR = 2'b01, // Load 6-bit immediate into GPIO Output Enable gpio_oe_q[5:0]
+        MOV_DEST_CLKDIV = 2'b10, // Load 6-bit immediate into Baud Rate Clock Prescaler
+        MOV_DEST_SYS    = 2'b11  // Sub-decoded by operand[5:3]:
+                                 //   0xx: pc_page_q <= operand[4:0] (32 pages x 64 words = 2048 insts)
+                                 //   100: jmp_pin_sel_q <= operand[2:0] (select pin 0..7 for OP_JMP)
+                                 //   101: gpio_oe_q[7:6] <= operand[1:0] (configure upper 2 GPIO OEs)
+                                 //   110: open_drain_mask_q[operand[2:0]] <= 1'b1 (lock pin as open-drain)
+                                 //   111: state_q <= ST_HALTED (clean firmware HALT)
+    } mov_dest_e;
+
+    // Host SPI Command Opcodes (1st byte after CS_N asserts low when load_mode == 0)
+    // Note on Host SPI Timing: Because SCK is synchronized into the ASIC clock domain,
+    // the external host must satisfy f_clk >= 8 * f_SPI.
+    typedef enum logic [7:0] {
+        CMD_NOP        = 8'h00,
+        CMD_WRITE_IMEM = 8'h01, // 16-bit start addr + 16-bit inst words (ONLY allowed when stopped)
+        CMD_WRITE_TX   = 8'h02, // Stream 8-bit payload bytes into Host TX FIFO
+        CMD_READ_RX    = 8'h03, // Stream 8-bit payload bytes out of Host RX FIFO
+        CMD_CTRL       = 8'h04, // 1-byte control: bit[0]=run, bit[1]=reset_cpu, bit[2]=clear_fifo
+        CMD_STATUS     = 8'h05  // Read 8-bit status: {halted, running, imem_err, fifo_ovf, rx_f, rx_e, tx_f, tx_e}
+    } spi_cmd_e;
+
+    // 16-bit Packed Instruction Format (Reference Layout)
+    // +------------+-------+--------+-----------+--------------+
+    // | Bits 15:13 | Bit12 | Bit 11 | Bits 10:8 |  Bits 7:0    |
+    // |   opcode   | ss_en | ss_val |   delay   |   operand    |
+    // +------------+-------+--------+-----------+--------------+
+    // OP_OUT operand[7:0] layout:
+    //   operand[7]   = 1: Open-Drain mode, 0: Push-Pull mode
+    //   operand[6]   = 1: MSB-first (osr_q[7]), 0: LSB-first (osr_q[0])
+    //   operand[5:3] = Reserved (0)
+    //   operand[2:0] = Target GPIO pin index (0..7)
+    typedef struct packed {
+        opcode_e    opcode;   // [15:13] Primary operation
+        logic       ss_en;    // [12]    Side-set Enable (1 = update side_set_pin)
+        logic       ss_val;   // [11]    Side-set Value  (0 or 1 driven onto SCLK)
+        logic [2:0] delay;    // [10:8]  Post-instruction stall (0 to 7 Uniform Protocol Ticks)
+        logic [7:0] operand;  // [7:0]   Immediate data, pin mask, or branch address
+    } instruction_t;
+
+
 
     // Synchronizers for asynchronous Host pins (including load_mode)
     logic [1:0] load_mode_sync_q;
@@ -599,7 +601,72 @@ module execution_core (
     output logic [7:0]  gpio_oe,        // Output Enable (1 = Output, 0 = High-Z Input)
     output logic        side_set_pin    // Dedicated Side-Set clock/control pin (SCLK)
 );
-    import isa_pkg::*;
+    
+
+    // 3-bit Opcode Definitions (8 core instructions)
+    typedef enum logic [2:0] {
+        OP_SET  = 3'b000, // Drive GPIO[3:0] pins using 4-bit mask and 4-bit value
+        OP_WAIT = 3'b001, // Stall execution until selected GPIO pin matches polarity
+        OP_OUT  = 3'b010, // Shift 1 bit from OSR to pin (supports LSB/MSB-first & Open-Drain)
+        OP_IN   = 3'b011, // Sample 1 bit from selected GPIO pin into ISR (LSB/MSB-first)
+        OP_JMP  = 3'b100, // Conditional or unconditional jump (supports X-- loop counter)
+        OP_PULL = 3'b101, // Pull 8-bit byte from Host TX FIFO (or 7-bit imm) into OSR
+        OP_PUSH = 3'b110, // Push 8-bit byte from ISR into Host RX FIFO
+        OP_MOV  = 3'b111  // Configure Scratch X, Pin Directions, Clock Divider, Page/OD/Halt
+    } opcode_e;
+
+    // 2-bit Jump Condition Encoding (stored in operand[7:6] during OP_JMP)
+    typedef enum logic [1:0] {
+        JMP_ALWAYS   = 2'b00, // Unconditional branch to {pc_page_q, operand[5:0]}
+        JMP_PIN_LOW  = 2'b01, // Branch if gpio_in[jmp_pin_sel_q] == 0
+        JMP_PIN_HIGH = 2'b10, // Branch if gpio_in[jmp_pin_sel_q] == 1
+        JMP_X_NZ_DEC = 2'b11  // Branch if scratch counter X != 0, and post-decrement X
+    } jmp_cond_e;
+
+    // 2-bit MOV Target Encoding (stored in operand[7:6] during OP_MOV)
+    typedef enum logic [1:0] {
+        MOV_DEST_X      = 2'b00, // Load 6-bit immediate into Scratch Loop Counter X
+        MOV_DEST_PINDIR = 2'b01, // Load 6-bit immediate into GPIO Output Enable gpio_oe_q[5:0]
+        MOV_DEST_CLKDIV = 2'b10, // Load 6-bit immediate into Baud Rate Clock Prescaler
+        MOV_DEST_SYS    = 2'b11  // Sub-decoded by operand[5:3]:
+                                 //   0xx: pc_page_q <= operand[4:0] (32 pages x 64 words = 2048 insts)
+                                 //   100: jmp_pin_sel_q <= operand[2:0] (select pin 0..7 for OP_JMP)
+                                 //   101: gpio_oe_q[7:6] <= operand[1:0] (configure upper 2 GPIO OEs)
+                                 //   110: open_drain_mask_q[operand[2:0]] <= 1'b1 (lock pin as open-drain)
+                                 //   111: state_q <= ST_HALTED (clean firmware HALT)
+    } mov_dest_e;
+
+    // Host SPI Command Opcodes (1st byte after CS_N asserts low when load_mode == 0)
+    // Note on Host SPI Timing: Because SCK is synchronized into the ASIC clock domain,
+    // the external host must satisfy f_clk >= 8 * f_SPI.
+    typedef enum logic [7:0] {
+        CMD_NOP        = 8'h00,
+        CMD_WRITE_IMEM = 8'h01, // 16-bit start addr + 16-bit inst words (ONLY allowed when stopped)
+        CMD_WRITE_TX   = 8'h02, // Stream 8-bit payload bytes into Host TX FIFO
+        CMD_READ_RX    = 8'h03, // Stream 8-bit payload bytes out of Host RX FIFO
+        CMD_CTRL       = 8'h04, // 1-byte control: bit[0]=run, bit[1]=reset_cpu, bit[2]=clear_fifo
+        CMD_STATUS     = 8'h05  // Read 8-bit status: {halted, running, imem_err, fifo_ovf, rx_f, rx_e, tx_f, tx_e}
+    } spi_cmd_e;
+
+    // 16-bit Packed Instruction Format (Reference Layout)
+    // +------------+-------+--------+-----------+--------------+
+    // | Bits 15:13 | Bit12 | Bit 11 | Bits 10:8 |  Bits 7:0    |
+    // |   opcode   | ss_en | ss_val |   delay   |   operand    |
+    // +------------+-------+--------+-----------+--------------+
+    // OP_OUT operand[7:0] layout:
+    //   operand[7]   = 1: Open-Drain mode, 0: Push-Pull mode
+    //   operand[6]   = 1: MSB-first (osr_q[7]), 0: LSB-first (osr_q[0])
+    //   operand[5:3] = Reserved (0)
+    //   operand[2:0] = Target GPIO pin index (0..7)
+    typedef struct packed {
+        opcode_e    opcode;   // [15:13] Primary operation
+        logic       ss_en;    // [12]    Side-set Enable (1 = update side_set_pin)
+        logic       ss_val;   // [11]    Side-set Value  (0 or 1 driven onto SCLK)
+        logic [2:0] delay;    // [10:8]  Post-instruction stall (0 to 7 Uniform Protocol Ticks)
+        logic [7:0] operand;  // [7:0]   Immediate data, pin mask, or branch address
+    } instruction_t;
+
+
 
     typedef enum logic [1:0] {
         ST_EXECUTE   = 2'd0, // Normal 3-phase instruction fetch & execution
@@ -943,7 +1010,72 @@ module protocol_emulator_top (
     output logic [7:0] protocol_oe_pins,
     output logic       side_set_clk_pin
 );
-    import isa_pkg::*;
+    
+
+    // 3-bit Opcode Definitions (8 core instructions)
+    typedef enum logic [2:0] {
+        OP_SET  = 3'b000, // Drive GPIO[3:0] pins using 4-bit mask and 4-bit value
+        OP_WAIT = 3'b001, // Stall execution until selected GPIO pin matches polarity
+        OP_OUT  = 3'b010, // Shift 1 bit from OSR to pin (supports LSB/MSB-first & Open-Drain)
+        OP_IN   = 3'b011, // Sample 1 bit from selected GPIO pin into ISR (LSB/MSB-first)
+        OP_JMP  = 3'b100, // Conditional or unconditional jump (supports X-- loop counter)
+        OP_PULL = 3'b101, // Pull 8-bit byte from Host TX FIFO (or 7-bit imm) into OSR
+        OP_PUSH = 3'b110, // Push 8-bit byte from ISR into Host RX FIFO
+        OP_MOV  = 3'b111  // Configure Scratch X, Pin Directions, Clock Divider, Page/OD/Halt
+    } opcode_e;
+
+    // 2-bit Jump Condition Encoding (stored in operand[7:6] during OP_JMP)
+    typedef enum logic [1:0] {
+        JMP_ALWAYS   = 2'b00, // Unconditional branch to {pc_page_q, operand[5:0]}
+        JMP_PIN_LOW  = 2'b01, // Branch if gpio_in[jmp_pin_sel_q] == 0
+        JMP_PIN_HIGH = 2'b10, // Branch if gpio_in[jmp_pin_sel_q] == 1
+        JMP_X_NZ_DEC = 2'b11  // Branch if scratch counter X != 0, and post-decrement X
+    } jmp_cond_e;
+
+    // 2-bit MOV Target Encoding (stored in operand[7:6] during OP_MOV)
+    typedef enum logic [1:0] {
+        MOV_DEST_X      = 2'b00, // Load 6-bit immediate into Scratch Loop Counter X
+        MOV_DEST_PINDIR = 2'b01, // Load 6-bit immediate into GPIO Output Enable gpio_oe_q[5:0]
+        MOV_DEST_CLKDIV = 2'b10, // Load 6-bit immediate into Baud Rate Clock Prescaler
+        MOV_DEST_SYS    = 2'b11  // Sub-decoded by operand[5:3]:
+                                 //   0xx: pc_page_q <= operand[4:0] (32 pages x 64 words = 2048 insts)
+                                 //   100: jmp_pin_sel_q <= operand[2:0] (select pin 0..7 for OP_JMP)
+                                 //   101: gpio_oe_q[7:6] <= operand[1:0] (configure upper 2 GPIO OEs)
+                                 //   110: open_drain_mask_q[operand[2:0]] <= 1'b1 (lock pin as open-drain)
+                                 //   111: state_q <= ST_HALTED (clean firmware HALT)
+    } mov_dest_e;
+
+    // Host SPI Command Opcodes (1st byte after CS_N asserts low when load_mode == 0)
+    // Note on Host SPI Timing: Because SCK is synchronized into the ASIC clock domain,
+    // the external host must satisfy f_clk >= 8 * f_SPI.
+    typedef enum logic [7:0] {
+        CMD_NOP        = 8'h00,
+        CMD_WRITE_IMEM = 8'h01, // 16-bit start addr + 16-bit inst words (ONLY allowed when stopped)
+        CMD_WRITE_TX   = 8'h02, // Stream 8-bit payload bytes into Host TX FIFO
+        CMD_READ_RX    = 8'h03, // Stream 8-bit payload bytes out of Host RX FIFO
+        CMD_CTRL       = 8'h04, // 1-byte control: bit[0]=run, bit[1]=reset_cpu, bit[2]=clear_fifo
+        CMD_STATUS     = 8'h05  // Read 8-bit status: {halted, running, imem_err, fifo_ovf, rx_f, rx_e, tx_f, tx_e}
+    } spi_cmd_e;
+
+    // 16-bit Packed Instruction Format (Reference Layout)
+    // +------------+-------+--------+-----------+--------------+
+    // | Bits 15:13 | Bit12 | Bit 11 | Bits 10:8 |  Bits 7:0    |
+    // |   opcode   | ss_en | ss_val |   delay   |   operand    |
+    // +------------+-------+--------+-----------+--------------+
+    // OP_OUT operand[7:0] layout:
+    //   operand[7]   = 1: Open-Drain mode, 0: Push-Pull mode
+    //   operand[6]   = 1: MSB-first (osr_q[7]), 0: LSB-first (osr_q[0])
+    //   operand[5:3] = Reserved (0)
+    //   operand[2:0] = Target GPIO pin index (0..7)
+    typedef struct packed {
+        opcode_e    opcode;   // [15:13] Primary operation
+        logic       ss_en;    // [12]    Side-set Enable (1 = update side_set_pin)
+        logic       ss_val;   // [11]    Side-set Value  (0 or 1 driven onto SCLK)
+        logic [2:0] delay;    // [10:8]  Post-instruction stall (0 to 7 Uniform Protocol Ticks)
+        logic [7:0] operand;  // [7:0]   Immediate data, pin mask, or branch address
+    } instruction_t;
+
+
 
     // Internal SRAM Bus & Control Signals
     logic        sram_ren;
