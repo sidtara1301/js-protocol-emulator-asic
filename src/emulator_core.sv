@@ -6,9 +6,6 @@
 //          Branch Conditions, Side-Set fields, and Host SPI Commands for the
 //          Protocol Emulator ASIC.
 // =============================================================================
-ifndef YOSYS
-
-endif
 
 
 // =============================================================================
@@ -41,7 +38,8 @@ module sync_fifo #(
     logic [PTR_WIDTH:0]    count_q;
 
     assign empty    = (count_q == '0);
-    assign full     = (count_q == DEPTH[$clog2(DEPTH):0]);
+    localparam logic [PTR_WIDTH:0] DEPTH_VAL = DEPTH[PTR_WIDTH:0];
+    assign full     = (count_q == DEPTH_VAL);
     assign rdata    = mem_q[rptr_q];
 
     wire do_pop     = pop && !empty;
@@ -268,17 +266,7 @@ module bootloader_host_if (
     //   operand[6]   = 1: MSB-first (osr_q[7]), 0: LSB-first (osr_q[0])
     //   operand[5:3] = Reserved (0)
     //   operand[2:0] = Target GPIO pin index (0..7)
-    typedef struct packed {
-        opcode_e    opcode;   // [15:13] Primary operation
-        logic       ss_en;    // [12]    Side-set Enable (1 = update side_set_pin)
-        logic       ss_val;   // [11]    Side-set Value  (0 or 1 driven onto SCLK)
-        logic [2:0] delay;    // [10:8]  Post-instruction stall (0 to 7 Uniform Protocol Ticks)
-        logic [7:0] operand;  // [7:0]   Immediate data, pin mask, or branch address
-    } instruction_t;
-
-
-
-    // Synchronizers for asynchronous Host pins (including load_mode)
+// Synchronizers for asynchronous Host pins (including load_mode)
     logic [1:0] load_mode_sync_q;
     logic [1:0] cs_n_sync_q;
     logic [2:0] sck_sync_q;
@@ -658,17 +646,7 @@ module execution_core (
     //   operand[6]   = 1: MSB-first (osr_q[7]), 0: LSB-first (osr_q[0])
     //   operand[5:3] = Reserved (0)
     //   operand[2:0] = Target GPIO pin index (0..7)
-    typedef struct packed {
-        opcode_e    opcode;   // [15:13] Primary operation
-        logic       ss_en;    // [12]    Side-set Enable (1 = update side_set_pin)
-        logic       ss_val;   // [11]    Side-set Value  (0 or 1 driven onto SCLK)
-        logic [2:0] delay;    // [10:8]  Post-instruction stall (0 to 7 Uniform Protocol Ticks)
-        logic [7:0] operand;  // [7:0]   Immediate data, pin mask, or branch address
-    } instruction_t;
-
-
-
-    typedef enum logic [1:0] {
+typedef enum logic [1:0] {
         ST_EXECUTE   = 2'd0, // Normal 3-phase instruction fetch & execution
         ST_WAIT_COND = 2'd1, // Poll pin condition for OP_WAIT or FIFO stall
         ST_DELAY     = 2'd2, // Stall for inst_delay Uniform Protocol Ticks
@@ -1067,17 +1045,7 @@ module protocol_emulator_top (
     //   operand[6]   = 1: MSB-first (osr_q[7]), 0: LSB-first (osr_q[0])
     //   operand[5:3] = Reserved (0)
     //   operand[2:0] = Target GPIO pin index (0..7)
-    typedef struct packed {
-        opcode_e    opcode;   // [15:13] Primary operation
-        logic       ss_en;    // [12]    Side-set Enable (1 = update side_set_pin)
-        logic       ss_val;   // [11]    Side-set Value  (0 or 1 driven onto SCLK)
-        logic [2:0] delay;    // [10:8]  Post-instruction stall (0 to 7 Uniform Protocol Ticks)
-        logic [7:0] operand;  // [7:0]   Immediate data, pin mask, or branch address
-    } instruction_t;
-
-
-
-    // Internal SRAM Bus & Control Signals
+// Internal SRAM Bus & Control Signals
     logic        sram_ren;
     logic        sram_wen;
     logic        cpu_sram_ren;
