@@ -7,9 +7,9 @@
   "CLOCK_PORT": "clk",
   "CLOCK_PERIOD": 20.0,
 
-  "FP_PDN_MULTILAYER": true,
-  "FP_PDN_UPPER_LAYER": "TopMetal1",
-  "FP_PDN_LOWER_LAYER": "Metal4",
+  "PDN_MULTILAYER": true,
+  "PDN_HORIZONTAL_LAYER": "TopMetal1",
+  "PDN_VERTICAL_LAYER": "Metal4",
 
   "MACROS": {
     "RM_IHPSG13_1P_1024x32_c2_bm_bist": {
@@ -33,7 +33,7 @@
           "pdk_dir::libs.ref/sg13cmos5l_sram/lib/RM_IHPSG13_1P_1024x32_c2_bm_bist_typ_1p20V_25C.lib"
         ],
         "*_fast_1p32V_m40C": [
-          "pdk_dir::libs.ref/sg13cmos5l_sram/lib/RM_IHPSG13_1P_1024x32_c2_bm_bist_fast_1p32V_m40C.lib"
+          "pdk_dir::libs.ref/sg13cmos5l_sram/lib/RM_IHPSG13_1P_1024x32_c2_bm_bist_fast_1p32V_m55C.lib"
         ],
         "*_slow_1p08V_125C": [
           "pdk_dir::libs.ref/sg13cmos5l_sram/lib/RM_IHPSG13_1P_1024x32_c2_bm_bist_slow_1p08V_125C.lib"
