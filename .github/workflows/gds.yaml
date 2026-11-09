@@ -20,7 +20,7 @@ jobs:
 
       - name: Restore cached IHP PDK (.ciel)
         id: cache-pdk-restore
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ~/.ciel
           key: ciel-ihp-sg13-89d42ee6d2fd9b50b86a1aada6fee6673c3e6008
@@ -32,38 +32,57 @@ jobs:
           docker pull ghcr.io/librelane/librelane:3.1.0.dev4
           docker rm -f patch_librelane >/dev/null 2>&1 || true
           docker run --name patch_librelane ghcr.io/librelane/librelane:3.1.0.dev4 python3 -c '
-          import os, stat, httpx
+          import os, stat, httpx, ciel.manage
+
           cfg = os.path.realpath(os.path.join(os.path.dirname(httpx.__file__), "_config.py"))
           os.chmod(cfg, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
           s = open(cfg).read().replace("timeout=5.0", "timeout=120.0")
           open(cfg, "w").write(s)
           print("Successfully patched httpx default timeout to 120s in", cfg)
+
+          mpath = os.path.realpath(ciel.manage.__file__)
+          os.chmod(mpath, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+          msrc = open(mpath).read()
+          retry_patch = """
+          _orig_ciel_fetch = fetch
+          def fetch(*args, **kwargs):
+              import time
+              for _attempt in range(1, 6):
+                  try:
+                      return _orig_ciel_fetch(*args, **kwargs)
+                  except Exception as _e:
+                      print(f"[ciel.fetch retry {_attempt}/5] {_e}", flush=True)
+                      if _attempt == 5:
+                          raise
+                      time.sleep(5 * _attempt)
+          """
+          if "_orig_ciel_fetch" not in msrc:
+              open(mpath, "w").write(msrc + "\n" + retry_patch)
+          print("Successfully patched ciel.manage.fetch with 5x retry in", mpath)
           '
           docker commit patch_librelane ghcr.io/librelane/librelane:3.1.0.dev4
           docker rm patch_librelane
 
           mkdir -p "$HOME/.ciel"
-          docker run --rm -v "$HOME:$HOME" -e HOME="$HOME" -e GITHUB_TOKEN="$GITHUB_TOKEN" ghcr.io/librelane/librelane:3.1.0.dev4 python3 -c '
-          import os, time, ciel
-          pdk_root = os.path.expanduser("~/.ciel")
-          version = "89d42ee6d2fd9b50b86a1aada6fee6673c3e6008"
-          libs = ["sg13cmos5l_stdcell", "sg13cmos5l_io", "sg13cmos5l_sram"]
-          for attempt in range(1, 6):
-              try:
-                  print(f"Fetching IHP PDK (attempt {attempt}/5) with 120s timeout...")
-                  ciel.fetch(pdk_root, "ihp-sg13", version, include_libraries=libs)
-                  print("IHP PDK is ready in ~/.ciel")
-                  break
-              except Exception as e:
-                  print(f"Attempt {attempt} failed: {e}")
-                  if attempt == 5:
-                      raise
-                  time.sleep(5 * attempt)
+          docker run --rm -v "$HOME:$HOME" -v "$PWD:/work" -w /work -e HOME="$HOME" -e GITHUB_TOKEN="$GITHUB_TOKEN" ghcr.io/librelane/librelane:3.1.0.dev4 python3 -c '
+          import sys, ciel, ciel.manage
+          from librelane.__main__ import cli
+
+          _real_fetch = ciel.manage.fetch
+          def _fetch_and_exit(*args, **kwargs):
+              res = _real_fetch(*args, **kwargs)
+              print("IHP PDK is ready in ~/.ciel:", res, flush=True)
+              sys.exit(0)
+
+          ciel.fetch = _fetch_and_exit
+          ciel.manage.fetch = _fetch_and_exit
+          sys.argv = ["librelane", "--pdk", "ihp-sg13cmos5l", "src/config.json"]
+          cli()
           '
 
       - name: Save IHP PDK (.ciel) to cache
         if: always() && steps.cache-pdk-restore.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: ~/.ciel
           key: ciel-ihp-sg13-89d42ee6d2fd9b50b86a1aada6fee6673c3e6008
