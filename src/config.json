@@ -7,6 +7,8 @@
   "CLOCK_PORT": "clk",
   "CLOCK_PERIOD": 20.0,
 
+  "FP_SIZING": "absolute",
+
   "PDN_MULTILAYER": true,
   "PDN_HORIZONTAL_LAYER": "TopMetal1",
   "PDN_VERTICAL_LAYER": "Metal4",
@@ -15,7 +17,7 @@
     "RM_IHPSG13_1P_1024x32_c2_bm_bist": {
       "instances": {
         "u_emulator.u_sram.u_ihp_sram": {
-          "location": [25, 25],
+          "location": [100, 100],
           "orientation": "N"
         }
       },
@@ -43,7 +45,7 @@
   },
 
   "PDN_MACRO_CONNECTIONS": [
-    "u_emulator.u_sram.u_ihp_sram VDD VSS VDD! VSS!",
-    "u_emulator.u_sram.u_ihp_sram VDD VSS VDDARRAY! VSS!"
+    "u_emulator.u_sram.u_ihp_sram VPWR VGND VDD! VSS!",
+    "u_emulator.u_sram.u_ihp_sram VPWR VGND VDDARRAY! VSS!"
   ]
 }

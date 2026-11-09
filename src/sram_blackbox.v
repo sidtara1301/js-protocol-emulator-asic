@@ -1,5 +1,7 @@
 `default_nettype none
 
+/* verilator lint_off UNUSEDSIGNAL */
+/* verilator lint_off UNDRIVEN */
 (* blackbox *)
 module RM_IHPSG13_1P_1024x32_c2_bm_bist (
     input  wire        A_CLK,
@@ -21,5 +23,7 @@ module RM_IHPSG13_1P_1024x32_c2_bm_bist (
     input  wire [31:0] A_BIST_BM
 );
 endmodule
+/* verilator lint_on UNDRIVEN */
+/* verilator lint_on UNUSEDSIGNAL */
 
 `default_nettype wire
