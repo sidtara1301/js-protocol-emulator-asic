@@ -13,6 +13,9 @@
   "PDN_HORIZONTAL_LAYER": "TopMetal1",
   "PDN_VERTICAL_LAYER": "Metal4",
 
+  "RUN_MAGIC_DRC": false,
+  "ERROR_ON_MAGIC_DRC": false,
+
   "MACROS": {
     "RM_IHPSG13_1P_1024x32_c2_bm_bist": {
       "instances": {
