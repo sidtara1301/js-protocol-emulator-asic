@@ -25,8 +25,8 @@
       "lef": [
         "pdk_dir::libs.ref/sg13cmos5l_sram/lef/RM_IHPSG13_1P_1024x32_c2_bm_bist.lef"
       ],
-      "nl": [
-        "pdk_dir::libs.ref/sg13cmos5l_sram/verilog/RM_IHPSG13_1P_1024x32_c2_bm_bist.v"
+      "vh": [
+        "dir::sram_blackbox.v"
       ],
       "lib": {
         "*_typ_1p20V_25C": [
